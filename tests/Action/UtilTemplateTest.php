@@ -24,6 +24,7 @@ namespace Fusio\Adapter\Util\Tests\Action;
 use Fusio\Adapter\Util\Action\UtilTemplate;
 use Fusio\Adapter\Util\Tests\UtilTestCase;
 use Fusio\Engine\Model\Action;
+use Fusio\Engine\Repository\ActionMemory;
 use Fusio\Engine\Response;
 use Fusio\Engine\Test\CallbackAction;
 use PSX\Http\Environment\HttpResponseInterface;
@@ -45,10 +46,12 @@ class UtilTemplateTest extends UtilTestCase
             },
         ]);
 
-        $this->getActionRepository()->add($action);
+        /** @var ActionMemory $repository */
+        $repository = $this->getActionRepository();
+        $repository->add($action);
     }
 
-    public function testHandle()
+    public function testHandle(): void
     {
         $parameters = $this->getParameters([
             'statusCode' => 200,
@@ -66,7 +69,7 @@ class UtilTemplateTest extends UtilTestCase
         $this->assertEquals('<foo>Hello World</foo>', $response->getBody());
     }
 
-    public function testHandleDefaultContentType()
+    public function testHandleDefaultContentType(): void
     {
         $parameters = $this->getParameters([
             'statusCode' => 200,

@@ -23,6 +23,7 @@ namespace Fusio\Adapter\Util\Tests\Action;
 
 use Fusio\Adapter\Util\Action\UtilStaticResponse;
 use Fusio\Adapter\Util\Tests\UtilTestCase;
+use Fusio\Engine\ConfigurableInterface;
 use Fusio\Engine\Form\Builder;
 use Fusio\Engine\Form\Container;
 use PSX\Http\Environment\HttpResponseInterface;
@@ -36,7 +37,7 @@ use PSX\Http\Environment\HttpResponseInterface;
  */
 class UtilStaticResponseTest extends UtilTestCase
 {
-    public function testHandle()
+    public function testHandle(): void
     {
         $parameters = $this->getParameters([
             'statusCode' => 200,
@@ -55,7 +56,7 @@ class UtilStaticResponseTest extends UtilTestCase
         $this->assertEquals($body, $response->getBody());
     }
 
-    public function testHandleInvalidResponseFormat()
+    public function testHandleInvalidResponseFormat(): void
     {
         $this->expectException(\JsonException::class);
 
@@ -68,11 +69,13 @@ class UtilStaticResponseTest extends UtilTestCase
         $action->handle($this->getRequest(), $parameters, $this->getContext());
     }
 
-    public function testGetForm()
+    public function testGetForm(): void
     {
         $action  = $this->getActionFactory()->factory(UtilStaticResponse::class);
         $builder = new Builder();
         $factory = $this->getFormElementFactory();
+
+        $this->assertInstanceOf(ConfigurableInterface::class, $action);
 
         $action->configure($builder, $factory);
 

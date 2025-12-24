@@ -36,7 +36,7 @@ use PSX\Record\Record;
  */
 class UtilDispatchEventTest extends UtilTestCase
 {
-    public function testHandle()
+    public function testHandle(): void
     {
         $parameters = $this->getParameters([
             'event' => 'my_event',
@@ -52,7 +52,7 @@ class UtilDispatchEventTest extends UtilTestCase
         $this->assertEquals(['success' => true, 'message' => 'Event successfully dispatched'], $response->getBody());
     }
 
-    public function testHandleInvalidEvent()
+    public function testHandleInvalidEvent(): void
     {
         $this->expectException(ConfigurationException::class);
 

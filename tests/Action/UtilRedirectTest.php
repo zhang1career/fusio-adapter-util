@@ -23,6 +23,7 @@ namespace Fusio\Adapter\Util\Tests\Action;
 
 use Fusio\Adapter\Util\Action\UtilRedirect;
 use Fusio\Adapter\Util\Tests\UtilTestCase;
+use Fusio\Engine\ConfigurableInterface;
 use Fusio\Engine\Exception\ConfigurationException;
 use Fusio\Engine\Form\Builder;
 use Fusio\Engine\Form\Container;
@@ -37,7 +38,7 @@ use PSX\Http\Environment\HttpResponseInterface;
  */
 class UtilRedirectTest extends UtilTestCase
 {
-    public function testHandle()
+    public function testHandle(): void
     {
         $parameters = $this->getParameters([
             'location' => 'https://google.com',
@@ -52,7 +53,7 @@ class UtilRedirectTest extends UtilTestCase
         $this->assertEquals(null, $response->getBody());
     }
 
-    public function testHandleInvalidLocation()
+    public function testHandleInvalidLocation(): void
     {
         $this->expectException(ConfigurationException::class);
 
@@ -64,11 +65,13 @@ class UtilRedirectTest extends UtilTestCase
         $action->handle($this->getRequest(), $parameters, $this->getContext());
     }
 
-    public function testGetForm()
+    public function testGetForm(): void
     {
         $action  = $this->getActionFactory()->factory(UtilRedirect::class);
         $builder = new Builder();
         $factory = $this->getFormElementFactory();
+
+        $this->assertInstanceOf(ConfigurableInterface::class, $action);
 
         $action->configure($builder, $factory);
 

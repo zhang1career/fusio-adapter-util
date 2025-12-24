@@ -30,6 +30,7 @@ use Fusio\Engine\ParametersInterface;
 use Fusio\Engine\RequestInterface;
 use PSX\Http\Environment\HttpResponseInterface;
 use PSX\Record\Record;
+use PSX\Record\RecordInterface;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
 
@@ -74,7 +75,10 @@ class UtilTemplate extends ActionAbstract
         $builder->add($elementFactory->newTextArea('template', 'Template', 'html', 'The twig template'));
     }
 
-    private function getTemplateContext(RequestInterface $request, ParametersInterface $configuration, ContextInterface $context): ?Record
+    /**
+     * @return RecordInterface<mixed>|null
+     */
+    private function getTemplateContext(RequestInterface $request, ParametersInterface $configuration, ContextInterface $context): ?RecordInterface
     {
         $contextAction = $configuration->get('context');
         if (empty($contextAction)) {
@@ -86,7 +90,10 @@ class UtilTemplate extends ActionAbstract
         return $this->parseResponse($response);
     }
 
-    private function render(string $template, ?Record $templateContext): string
+    /**
+     * @param RecordInterface<mixed>|null $templateContext
+     */
+    private function render(string $template, ?RecordInterface $templateContext): string
     {
         $loader = new ArrayLoader(['template' => $template]);
         $twig = new Environment($loader, []);
@@ -94,7 +101,10 @@ class UtilTemplate extends ActionAbstract
         return $twig->render('template', $templateContext?->getAll() ?? []);
     }
 
-    private function parseResponse(mixed $data): ?Record
+    /**
+     * @return RecordInterface<mixed>|null
+     */
+    private function parseResponse(mixed $data): ?RecordInterface
     {
         if ($data instanceof HttpResponseInterface) {
             return $this->parseResponse($data->getBody());

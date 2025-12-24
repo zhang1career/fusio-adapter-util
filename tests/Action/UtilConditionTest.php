@@ -24,8 +24,10 @@ namespace Fusio\Adapter\Util\Tests\Action;
 use Fusio\Adapter\Util\Action\UtilCondition;
 use Fusio\Adapter\Util\Tests\UtilTestCase;
 use Fusio\Engine\Model\Action;
+use Fusio\Engine\Repository\ActionMemory;
 use Fusio\Engine\Response;
 use Fusio\Engine\Test\CallbackAction;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PSX\Http\Environment\HttpResponseInterface;
 use PSX\Record\Record;
 
@@ -46,7 +48,9 @@ class UtilConditionTest extends UtilTestCase
             },
         ]);
 
-        $this->getActionRepository()->add($action);
+        /** @var ActionMemory $repository */
+        $repository = $this->getActionRepository();
+        $repository->add($action);
 
         $action = new Action(2, 'false', CallbackAction::class, false, [
             'callback' => function(Response\FactoryInterface $response){
@@ -54,13 +58,14 @@ class UtilConditionTest extends UtilTestCase
             },
         ]);
 
-        $this->getActionRepository()->add($action);
+        $repository->add($action);
     }
 
     /**
-     * @dataProvider conditionProvider
+     * @param array<string, bool> $expect
      */
-    public function testHandle(string $condition, array $expect)
+    #[DataProvider('conditionProvider')]
+    public function testHandle(string $condition, array $expect): void
     {
         $parameters = $this->getParameters([
             'condition' => $condition,
@@ -77,6 +82,9 @@ class UtilConditionTest extends UtilTestCase
         $this->assertEquals($expect, $response->getBody());
     }
 
+    /**
+     * @return array<array{string, array<string, bool>}>
+     */
     public static function conditionProvider(): array
     {
         return [

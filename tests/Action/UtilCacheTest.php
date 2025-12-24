@@ -23,10 +23,13 @@ namespace Fusio\Adapter\Util\Tests\Action;
 
 use Fusio\Adapter\Util\Action\UtilCache;
 use Fusio\Adapter\Util\Tests\UtilTestCase;
+use Fusio\Engine\ConfigurableInterface;
 use Fusio\Engine\Form\Builder;
 use Fusio\Engine\Form\Container;
 use Fusio\Engine\Model\Action;
 use Fusio\Engine\Model\Connection;
+use Fusio\Engine\Repository\ActionMemory;
+use Fusio\Engine\Repository\ConnectionMemory;
 use Fusio\Engine\Response;
 use Fusio\Engine\Test\CallbackAction;
 use Fusio\Engine\Test\CallbackConnection;
@@ -49,7 +52,9 @@ class UtilCacheTest extends UtilTestCase
             },
         ]);
 
-        $this->getConnectionRepository()->add($connection);
+        /** @var ConnectionMemory $repository */
+        $repository = $this->getConnectionRepository();
+        $repository->add($connection);
 
         $action = new Action(1, 'foo', CallbackAction::class, false, [
             'callback' => function(Response\FactoryInterface $response){
@@ -65,10 +70,12 @@ class UtilCacheTest extends UtilTestCase
             },
         ]);
 
-        $this->getActionRepository()->add($action);
+        /** @var ActionMemory $repository */
+        $repository = $this->getActionRepository();
+        $repository->add($action);
     }
 
-    public function testHandle()
+    public function testHandle(): void
     {
         $parameters = $this->getParameters([
             'connection' => 1,
@@ -95,11 +102,13 @@ class UtilCacheTest extends UtilTestCase
         }
     }
 
-    public function testGetForm()
+    public function testGetForm(): void
     {
         $action  = $this->getActionFactory()->factory(UtilCache::class);
         $builder = new Builder();
         $factory = $this->getFormElementFactory();
+
+        $this->assertInstanceOf(ConfigurableInterface::class, $action);
 
         $action->configure($builder, $factory);
 

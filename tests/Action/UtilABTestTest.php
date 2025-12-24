@@ -23,9 +23,11 @@ namespace Fusio\Adapter\Util\Tests\Action;
 
 use Fusio\Adapter\Util\Action\UtilABTest;
 use Fusio\Adapter\Util\Tests\UtilTestCase;
+use Fusio\Engine\ConfigurableInterface;
 use Fusio\Engine\Form\Builder;
 use Fusio\Engine\Form\Container;
 use Fusio\Engine\Model\Action;
+use Fusio\Engine\Repository\ActionMemory;
 use Fusio\Engine\Response;
 use Fusio\Engine\Test\CallbackAction;
 use PSX\Http\Environment\HttpResponseInterface;
@@ -47,7 +49,9 @@ class UtilABTestTest extends UtilTestCase
             },
         ]);
 
-        $this->getActionRepository()->add($action);
+        /** @var ActionMemory $repository */
+        $repository = $this->getActionRepository();
+        $repository->add($action);
 
         $action = new Action(2, 'b', CallbackAction::class, false, [
             'callback' => function(Response\FactoryInterface $response){
@@ -55,10 +59,10 @@ class UtilABTestTest extends UtilTestCase
             },
         ]);
 
-        $this->getActionRepository()->add($action);
+        $repository->add($action);
     }
 
-    public function testHandle()
+    public function testHandle(): void
     {
         $parameters = $this->getParameters([
             'a' => 1,
@@ -75,7 +79,7 @@ class UtilABTestTest extends UtilTestCase
         $this->assertEquals(['a' => true], $response->getBody());
     }
 
-    public function testHandleZero()
+    public function testHandleZero(): void
     {
         $parameters = $this->getParameters([
             'a' => 1,
@@ -92,7 +96,7 @@ class UtilABTestTest extends UtilTestCase
         $this->assertEquals(['b' => true], $response->getBody());
     }
 
-    public function testHandleRandom()
+    public function testHandleRandom(): void
     {
         $parameters = $this->getParameters([
             'a' => 1,
@@ -115,11 +119,13 @@ class UtilABTestTest extends UtilTestCase
         }
     }
 
-    public function testGetForm()
+    public function testGetForm(): void
     {
         $action  = $this->getActionFactory()->factory(UtilABTest::class);
         $builder = new Builder();
         $factory = $this->getFormElementFactory();
+
+        $this->assertInstanceOf(ConfigurableInterface::class, $action);
 
         $action->configure($builder, $factory);
 

@@ -23,12 +23,15 @@ namespace Fusio\Adapter\Util\Tests\Action;
 
 use Fusio\Adapter\Util\Action\UtilJsonPatch;
 use Fusio\Adapter\Util\Tests\UtilTestCase;
+use Fusio\Engine\ConfigurableInterface;
 use Fusio\Engine\Form\Builder;
 use Fusio\Engine\Form\Container;
 use Fusio\Engine\Model\Action;
+use Fusio\Engine\Repository\ActionMemory;
 use Fusio\Engine\Response;
 use Fusio\Engine\Test\CallbackAction;
 use PSX\Http\Environment\HttpResponseInterface;
+use PSX\Json\Parser;
 use PSX\Record\Record;
 
 /**
@@ -48,10 +51,12 @@ class UtilJsonPatchTest extends UtilTestCase
             },
         ]);
 
-        $this->getActionRepository()->add($action);
+        /** @var ActionMemory $repository */
+        $repository = $this->getActionRepository();
+        $repository->add($action);
     }
 
-    public function testHandle()
+    public function testHandle(): void
     {
         $body = <<<JSON
 {
@@ -96,15 +101,16 @@ JSON;
         $this->assertInstanceOf(HttpResponseInterface::class, $response);
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertEquals([], $response->getHeaders());
-        $this->assertJsonStringEqualsJsonString($expect, json_encode($response->getBody()));
-
+        $this->assertJsonStringEqualsJsonString($expect, Parser::encode($response->getBody()));
     }
 
-    public function testGetForm()
+    public function testGetForm(): void
     {
         $action  = $this->getActionFactory()->factory(UtilJsonPatch::class);
         $builder = new Builder();
         $factory = $this->getFormElementFactory();
+
+        $this->assertInstanceOf(ConfigurableInterface::class, $action);
 
         $action->configure($builder, $factory);
 

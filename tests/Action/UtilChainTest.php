@@ -24,6 +24,7 @@ namespace Fusio\Adapter\Util\Tests\Action;
 use Fusio\Adapter\Util\Action\UtilChain;
 use Fusio\Adapter\Util\Tests\UtilTestCase;
 use Fusio\Engine\Model\Action;
+use Fusio\Engine\Repository\ActionMemory;
 use Fusio\Engine\Response;
 use Fusio\Engine\Test\CallbackAction;
 use PSX\Http\Environment\HttpResponseInterface;
@@ -45,7 +46,9 @@ class UtilChainTest extends UtilTestCase
             },
         ]);
 
-        $this->getActionRepository()->add($action);
+        /** @var ActionMemory $repository */
+        $repository = $this->getActionRepository();
+        $repository->add($action);
 
         $action = new Action(2, 'b', CallbackAction::class, false, [
             'callback' => function(Response\FactoryInterface $response){
@@ -53,10 +56,10 @@ class UtilChainTest extends UtilTestCase
             },
         ]);
 
-        $this->getActionRepository()->add($action);
+        $repository->add($action);
     }
 
-    public function testHandle()
+    public function testHandle(): void
     {
         $parameters = $this->getParameters([
             'a' => 1,
