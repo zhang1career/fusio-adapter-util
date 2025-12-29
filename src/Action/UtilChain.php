@@ -21,13 +21,17 @@
 
 namespace Fusio\Adapter\Util\Action;
 
+use Fusio\Adapter\Util\Component\RequestChainStorage;
 use Fusio\Engine\ActionAbstract;
 use Fusio\Engine\ContextInterface;
+use Fusio\Engine\Exception\ActionNotFoundException;
+use Fusio\Engine\Exception\FactoryResolveException;
 use Fusio\Engine\Form\BuilderInterface;
 use Fusio\Engine\Form\ElementFactoryInterface;
 use Fusio\Engine\ParametersInterface;
+use Fusio\Engine\Request;
+use Fusio\Engine\Request\HttpRequestContext;
 use Fusio\Engine\RequestInterface;
-use PSX\Http\Environment\HttpResponseInterface;
 
 /**
  * UtilChain
@@ -43,6 +47,10 @@ class UtilChain extends ActionAbstract
         return 'Util-Chain';
     }
 
+    /**
+     * @throws FactoryResolveException
+     * @throws ActionNotFoundException
+     */
     public function handle(RequestInterface $request, ParametersInterface $configuration, ContextInterface $context): mixed
     {
         $actions = [
@@ -52,17 +60,62 @@ class UtilChain extends ActionAbstract
             'd',
         ];
 
+        // Clear the request-scoped storage at the beginning of chain execution
+        // This ensures a clean state for each request
+        RequestChainStorage::clear();
+
         $response = null;
+        $currentRequest = $request;
         foreach ($actions as $action) {
             $actionId = $configuration->get($action);
             if (empty($actionId)) {
                 continue;
             }
 
-            $response = $this->processor->execute($actionId, $request, $context);
+            $response = $this->processor->execute($actionId, $currentRequest, $context);
+            if (!RequestChainStorage::isEmpty()) {
+                $currentRequest = $this->updateRequest($request);
+                RequestChainStorage::clear();
+            }
         }
 
         return $response;
+    }
+
+    private function updateRequest(RequestInterface $request): RequestInterface
+    {
+        // Prepare new headers
+        $newHeaders = [];
+        // Add X-Request-Id header if available
+        if (RequestChainStorage::has('X-Request-Id')) {
+            $newHeaders['X-Request-Id'] = RequestChainStorage::get('X-Request-Id');
+        }
+
+        // update context
+        $newContext = null;
+        $originContext = $request->getContext();
+        if ($originContext instanceof HttpRequestContext) {
+            // Clone existing headers and add X-Request-Id
+            $requestContextMap = $originContext->jsonSerialize();
+            $originHeaders = $requestContextMap['headers'];
+            $newHeaders = array_merge($newHeaders, (array)$originHeaders);
+            // Create a new request with updated headers
+            $originContextRequest = $originContext->getRequest();
+            $newContextRequest = clone $originContextRequest;
+            $newContextRequest->setHeaders($newHeaders);
+            // Create a new HttpRequestContext with the modified request
+            $newContext = new HttpRequestContext(
+                $newContextRequest,
+                $originContext->getParameters()
+            );
+        }
+
+        // Create a new request with the updated context
+        return new Request(
+            $request->getArguments(),
+            $request->getPayload(),
+            $newContext ?? $request->getContext()
+        );
     }
 
     public function configure(BuilderInterface $builder, ElementFactoryInterface $elementFactory): void
