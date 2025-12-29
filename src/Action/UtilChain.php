@@ -22,6 +22,7 @@
 namespace Fusio\Adapter\Util\Action;
 
 use Fusio\Adapter\Util\Component\RequestChainStorage;
+use Fusio\Adapter\Util\Component\RequestFactory;
 use Fusio\Engine\ActionAbstract;
 use Fusio\Engine\ContextInterface;
 use Fusio\Engine\Exception\ActionNotFoundException;
@@ -75,6 +76,19 @@ class UtilChain extends ActionAbstract
             $response = $this->processor->execute($actionId, $currentRequest, $context);
             if (!RequestChainStorage::isEmpty()) {
                 $currentRequest = $this->updateRequest($request);
+
+                // Prepare new headers
+                $newHeaders = [];
+                // Add X-Request-Id header if available
+                if (RequestChainStorage::has('X-Request-Id')) {
+                    $newHeaders['X-Request-Id'] = RequestChainStorage::get('X-Request-Id');
+                }
+
+                $currentRequest = RequestFactory::overrideRequest(
+                    $request,
+                    "",
+                    $newHeaders);
+
                 RequestChainStorage::clear();
             }
         }
