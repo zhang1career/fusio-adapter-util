@@ -21,6 +21,7 @@
 
 namespace Fusio\Adapter\Util\Action;
 
+use Fusio\Adapter\Util\Component\RequestHelper;
 use Fusio\Engine\ActionAbstract;
 use Fusio\Engine\ContextInterface;
 use Fusio\Engine\Exception\ConfigurationException;
@@ -51,7 +52,15 @@ class UtilDispatchEvent extends ActionAbstract
             throw new ConfigurationException('No event defined');
         }
 
-        $this->dispatcher->dispatch($eventName, $request->getPayload());
+        $headers = RequestHelper::getHeaders($request);
+        $bypassHeaders = [];
+        if (isset($headers[RequestHelper::X_REQUEST_ID])) {
+            $bypassHeaders[RequestHelper::X_REQUEST_ID] = $headers[RequestHelper::X_REQUEST_ID];
+        }
+        if (isset($headers[RequestHelper::X_API_KEY])) {
+            $bypassHeaders[RequestHelper::X_API_KEY] = $headers[RequestHelper::X_API_KEY];
+        }
+        $this->dispatcher->dispatch($eventName, $request->getPayload(), $bypassHeaders);
 
         return $this->response->build(202, [], [
             'success' => true,

@@ -8,6 +8,10 @@ use Fusio\Engine\RequestInterface;
 
 class RequestHelper
 {
+    public const X_REQUEST_ID = 'X-Request-Id';
+
+    public const X_API_KEY = 'X-API-Key';
+
     public static function overrideRequest(RequestInterface $request,
                                            string           $method,
                                            array            $newHeaders): RequestInterface
