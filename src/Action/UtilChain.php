@@ -22,7 +22,7 @@
 namespace Fusio\Adapter\Util\Action;
 
 use Fusio\Adapter\Util\Component\RequestChainStorage;
-use Fusio\Adapter\Util\Component\RequestFactory;
+use Fusio\Adapter\Util\Component\RequestHelper;
 use Fusio\Engine\ActionAbstract;
 use Fusio\Engine\ContextInterface;
 use Fusio\Engine\Exception\ActionNotFoundException;
@@ -41,6 +41,9 @@ use Fusio\Engine\RequestInterface;
  */
 class UtilChain extends ActionAbstract
 {
+    const X_REQUEST_ID = 'X-Request-Id';
+    const X_API_KEY = 'X-API-Key';
+
     public function getName(): string
     {
         return 'Util-Chain';
@@ -63,6 +66,15 @@ class UtilChain extends ActionAbstract
         // This ensures a clean state for each request
         RequestChainStorage::clear();
 
+        // bypass original headers (used for propagation later)
+        $originHeaders = RequestHelper::getHeaders($request);
+        if (isset($originHeaders[self::X_REQUEST_ID])) {
+            RequestChainStorage::set(self::X_REQUEST_ID, $originHeaders[self::X_REQUEST_ID]);
+        }
+        if (isset($originHeaders[self::X_API_KEY])) {
+            RequestChainStorage::set(self::X_API_KEY, $originHeaders[self::X_API_KEY]);
+        }
+
         // Execute all but the last action first
         for ($i = 0; $i < sizeof($actions) - 1; $i++) {
             $action = $actions[$i];
@@ -83,18 +95,15 @@ class UtilChain extends ActionAbstract
             // Prepare new headers
             $newHeaders = [];
             // Add X-Request-Id header if available
-            if (RequestChainStorage::has('X-Request-Id')) {
-                $newHeaders['X-Request-Id'] = RequestChainStorage::get('X-Request-Id');
+            if (RequestChainStorage::has(self::X_REQUEST_ID)) {
+                $newHeaders[self::X_REQUEST_ID] = RequestChainStorage::get(self::X_REQUEST_ID);
             }
             // Add Api-Key header if available
-            if (RequestChainStorage::has('X-API-Key')) {
-                $newHeaders['X-API-Key'] = RequestChainStorage::get('X-API-Key');
+            if (RequestChainStorage::has(self::X_API_KEY)) {
+                $newHeaders[self::X_API_KEY] = RequestChainStorage::get(self::X_API_KEY);
             }
             // Create a new request with updated headers
-            $lastRequest = RequestFactory::overrideRequest(
-                $request,
-                "",
-                $newHeaders);
+            $lastRequest = RequestHelper::overrideRequest($request, "", $newHeaders);
             // Clear storage for the next action
             RequestChainStorage::clear();
         }
