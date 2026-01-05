@@ -28,6 +28,7 @@ use Fusio\Engine\Exception\ConfigurationException;
 use Fusio\Engine\Form\BuilderInterface;
 use Fusio\Engine\Form\ElementFactoryInterface;
 use Fusio\Engine\ParametersInterface;
+use Fusio\Engine\Request\HttpRequestContext;
 use Fusio\Engine\RequestInterface;
 use PSX\Http\Environment\HttpResponseInterface;
 
@@ -54,11 +55,11 @@ class UtilDispatchEvent extends ActionAbstract
 
         $headers = RequestHelper::getHeaders($request);
         $bypassHeaders = [];
-        if (isset($headers[RequestHelper::X_REQUEST_ID])) {
-            $bypassHeaders[RequestHelper::X_REQUEST_ID] = $headers[RequestHelper::X_REQUEST_ID];
+        if (isset($headers[HttpRequestContext::X_REQUEST_ID_LOWER])) {
+            $bypassHeaders[HttpRequestContext::X_REQUEST_ID_LOWER] = $headers[HttpRequestContext::X_REQUEST_ID_LOWER];
         }
-        if (isset($headers[RequestHelper::X_API_KEY])) {
-            $bypassHeaders[RequestHelper::X_API_KEY] = $headers[RequestHelper::X_API_KEY];
+        if (isset($headers[HttpRequestContext::X_API_KEY_LOWER])) {
+            $bypassHeaders[HttpRequestContext::X_API_KEY_LOWER] = $headers[HttpRequestContext::X_API_KEY_LOWER];
         }
         $this->dispatcher->dispatch($eventName, $request->getPayload(), $bypassHeaders);
 
