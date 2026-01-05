@@ -22,7 +22,7 @@
 namespace Fusio\Adapter\Util\Action;
 
 use Fusio\Adapter\Util\Component\RequestChainStorage;
-use Fusio\Adapter\Util\Component\RequestFactory;
+use Fusio\Adapter\Util\Component\RequestHelper;
 use Fusio\Engine\ActionAbstract;
 use Fusio\Engine\ContextInterface;
 use Fusio\Engine\Exception\ActionNotFoundException;
@@ -63,31 +63,49 @@ class UtilChain extends ActionAbstract
         // This ensures a clean state for each request
         RequestChainStorage::clear();
 
-        $response = null;
-        $currentRequest = $request;
-        foreach ($actions as $action) {
+        // bypass original headers (used for propagation later)
+        $originHeaders = RequestHelper::getHeaders($request);
+        if (isset($originHeaders[RequestHelper::X_REQUEST_ID])) {
+            RequestChainStorage::set(RequestHelper::X_REQUEST_ID, $originHeaders[RequestHelper::X_REQUEST_ID]);
+        }
+        if (isset($originHeaders[RequestHelper::X_API_KEY])) {
+            RequestChainStorage::set(RequestHelper::X_API_KEY, $originHeaders[RequestHelper::X_API_KEY]);
+        }
+
+        // Execute all but the last action first
+        for ($i = 0; $i < sizeof($actions) - 1; $i++) {
+            $action = $actions[$i];
             $actionId = $configuration->get($action);
             if (empty($actionId)) {
                 continue;
             }
-
-            $response = $this->processor->execute($actionId, $currentRequest, $context);
-            if (!RequestChainStorage::isEmpty()) {
-                // Prepare new headers
-                $newHeaders = [];
-                // Add X-Request-Id header if available
-                if (RequestChainStorage::has('X-Request-Id')) {
-                    $newHeaders['X-Request-Id'] = RequestChainStorage::get('X-Request-Id');
-                }
-                // Create a new request with updated headers
-                $currentRequest = RequestFactory::overrideRequest(
-                    $request,
-                    "",
-                    $newHeaders);
-                // Clear storage for the next action
-                RequestChainStorage::clear();
-            }
+            $_response = $this->processor->execute($actionId, $request, $context);
         }
+        // Prepare the last action
+        $actionId = $configuration->get($actions[sizeof($actions) - 1]);
+        if (empty($actionId)) {
+            throw new ActionNotFoundException('No action configured for the last chain element');
+        }
+        $lastRequest = $request;
+        // Check if there are any headers to propagate before the last action
+        if (!RequestChainStorage::isEmpty()) {
+            // Prepare new headers
+            $newHeaders = [];
+            // Add X-Request-Id header if available
+            if (RequestChainStorage::has(RequestHelper::X_REQUEST_ID)) {
+                $newHeaders[RequestHelper::X_REQUEST_ID] = RequestChainStorage::get(RequestHelper::X_REQUEST_ID);
+            }
+            // Add Api-Key header if available
+            if (RequestChainStorage::has(RequestHelper::X_API_KEY)) {
+                $newHeaders[RequestHelper::X_API_KEY] = RequestChainStorage::get(RequestHelper::X_API_KEY);
+            }
+            // Create a new request with updated headers
+            $lastRequest = RequestHelper::overrideRequest($request, "", $newHeaders);
+            // Clear storage for the next action
+            RequestChainStorage::clear();
+        }
+        // Execute the last action
+        $response = $this->processor->execute($actionId, $lastRequest, $context);
 
         return $response;
     }
