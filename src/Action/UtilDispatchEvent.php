@@ -21,15 +21,20 @@
 
 namespace Fusio\Adapter\Util\Action;
 
+use Doctrine\DBAL\Exception;
+use Fusio\Adapter\Util\Component\AccountKeeper;
 use Fusio\Adapter\Util\Component\RequestHelper;
-use Fusio\Engine\ActionAbstract;
 use Fusio\Engine\ContextInterface;
 use Fusio\Engine\Exception\ConfigurationException;
+use Fusio\Engine\Exception\ConnectionNotFoundException;
 use Fusio\Engine\Form\BuilderInterface;
 use Fusio\Engine\Form\ElementFactoryInterface;
 use Fusio\Engine\ParametersInterface;
+use Fusio\Engine\Request\HttpRequestContext;
 use Fusio\Engine\RequestInterface;
+use Paganini\Utils\AuthorizationUtil;
 use PSX\Http\Environment\HttpResponseInterface;
+
 
 /**
  * UtilDispatchEvent
@@ -38,13 +43,18 @@ use PSX\Http\Environment\HttpResponseInterface;
  * @license http://www.apache.org/licenses/LICENSE-2.0
  * @link    https://www.fusio-project.org/
  */
-class UtilDispatchEvent extends ActionAbstract
+class UtilDispatchEvent extends UtilAbstract
 {
     public function getName(): string
     {
         return 'Util-Dispatch-Event';
     }
 
+    /**
+     * @throws ConfigurationException
+     * @throws Exception
+     * @throws ConnectionNotFoundException
+     */
     public function handle(RequestInterface $request, ParametersInterface $configuration, ContextInterface $context): HttpResponseInterface
     {
         $eventName = $configuration->get('event');
@@ -52,13 +62,23 @@ class UtilDispatchEvent extends ActionAbstract
             throw new ConfigurationException('No event defined');
         }
 
+        // try to resolve the user name for this event from the database (optional connection)
+        $userName = $this->getWebhookUserName($configuration, $eventName);
+
         $headers = RequestHelper::getHeaders($request);
         $bypassHeaders = [];
-        if (isset($headers[RequestHelper::X_REQUEST_ID])) {
-            $bypassHeaders[RequestHelper::X_REQUEST_ID] = $headers[RequestHelper::X_REQUEST_ID];
+        // authorization
+        $accessToken = AccountKeeper::getInstance()->queryAccessToken($userName);
+        if ($accessToken) {
+            $bypassHeaders['authorization'] = AuthorizationUtil::buildBearerToken($accessToken);
         }
-        if (isset($headers[RequestHelper::X_API_KEY])) {
-            $bypassHeaders[RequestHelper::X_API_KEY] = $headers[RequestHelper::X_API_KEY];
+        // request id
+        if (isset($headers[HttpRequestContext::X_REQUEST_ID_LOWER])) {
+            $bypassHeaders[HttpRequestContext::X_REQUEST_ID_LOWER] = $headers[HttpRequestContext::X_REQUEST_ID_LOWER];
+        }
+        // api key
+        if (isset($headers[HttpRequestContext::X_API_KEY_LOWER])) {
+            $bypassHeaders[HttpRequestContext::X_API_KEY_LOWER] = $headers[HttpRequestContext::X_API_KEY_LOWER];
         }
         $this->dispatcher->dispatch($eventName, $request->getPayload(), $bypassHeaders);
 
@@ -68,8 +88,30 @@ class UtilDispatchEvent extends ActionAbstract
         ]);
     }
 
+    /**
+     * @param mixed $eventName
+     * @param ParametersInterface $configuration
+     * @return string
+     * @throws ConfigurationException
+     * @throws ConnectionNotFoundException
+     * @throws Exception
+     */
+    private function getWebhookUserName(mixed $eventName, ParametersInterface $configuration): string
+    {
+        $connection = $this->getConnection($configuration);
+
+        $sql = 'SELECT u.name FROM fusio_event e JOIN fusio_webhook w ON e.id=w.event_id JOIN fusio_user u ON u.id=w.user_id WHERE e.name=:name LIMIT 1';
+        $result = $connection->fetchOne($sql, ['name' => $eventName]);
+        if (!$result) {
+            return '';
+        }
+
+        return (string)$result;
+    }
+
     public function configure(BuilderInterface $builder, ElementFactoryInterface $elementFactory): void
     {
         $builder->add($elementFactory->newInput('event', 'Event', 'text', 'The event which gets dispatched'));
+        $builder->add($elementFactory->newConnection('connection', 'Connection', 'Optional database connection to resolve the user for the event'));
     }
 }

@@ -6,12 +6,23 @@ use Fusio\Engine\Request;
 use Fusio\Engine\Request\HttpRequestContext;
 use Fusio\Engine\RequestInterface;
 
+/**
+ * RequestHelper
+ *
+ * @author  Rongjin Zhang <rongjin.zh@gmail.com>
+ * @license http://www.apache.org/licenses/LICENSE-2.0
+ * @link    https://www.fusio-project.org/
+ */
 class RequestHelper
 {
-    public const X_REQUEST_ID = 'X-Request-Id';
-
-    public const X_API_KEY = 'X-API-Key';
-
+    /**
+     * Override the headers of a given request.
+     *
+     * @param RequestInterface $request
+     * @param string $method
+     * @param array $newHeaders
+     * @return RequestInterface
+     */
     public static function overrideRequest(RequestInterface $request,
                                            string           $method,
                                            array            $newHeaders): RequestInterface
@@ -49,6 +60,12 @@ class RequestHelper
         );
     }
 
+    /**
+     * Retrieve headers from the request context if available.
+     *
+     * @param RequestInterface $request
+     * @return array
+     */
     public static function getHeaders(RequestInterface $request): array
     {
         $headers = [];
