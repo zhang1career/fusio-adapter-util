@@ -30,7 +30,7 @@ use Fusio\Engine\Exception\ConnectionNotFoundException;
 use Fusio\Engine\Form\BuilderInterface;
 use Fusio\Engine\Form\ElementFactoryInterface;
 use Fusio\Engine\ParametersInterface;
-use Fusio\Engine\Request\HttpRequestContext;
+use Fusio\Engine\Request\HttpRequestHeaderConstant;
 use Fusio\Engine\RequestInterface;
 use Paganini\Utils\AuthorizationUtil;
 use PSX\Http\Environment\HttpResponseInterface;
@@ -63,24 +63,24 @@ class UtilDispatchEvent extends UtilAbstract
         }
 
         // try to resolve the user name for this event from the database (optional connection)
-        $userName = $this->getWebhookUserName($configuration, $eventName);
+        $userName = $this->getWebhookUserName($eventName, $configuration);
 
         $headers = RequestHelper::getHeaders($request);
-        $bypassHeaders = [];
+        $newHeaders = [];
         // authorization
         $accessToken = AccountKeeper::getInstance()->queryAccessToken($userName);
         if ($accessToken) {
-            $bypassHeaders['authorization'] = AuthorizationUtil::buildBearerToken($accessToken);
+            $newHeaders[HttpRequestHeaderConstant::AUTHORIZATION] = AuthorizationUtil::buildBearerToken($accessToken);
         }
         // request id
-        if (isset($headers[HttpRequestContext::X_REQUEST_ID_LOWER])) {
-            $bypassHeaders[HttpRequestContext::X_REQUEST_ID_LOWER] = $headers[HttpRequestContext::X_REQUEST_ID_LOWER];
+        if (isset($headers[HttpRequestHeaderConstant::X_REQUEST_ID_LOWER])) {
+            $newHeaders[HttpRequestHeaderConstant::X_REQUEST_ID] = $headers[HttpRequestHeaderConstant::X_REQUEST_ID_LOWER];
         }
         // api key
-        if (isset($headers[HttpRequestContext::X_API_KEY_LOWER])) {
-            $bypassHeaders[HttpRequestContext::X_API_KEY_LOWER] = $headers[HttpRequestContext::X_API_KEY_LOWER];
+        if (isset($headers[HttpRequestHeaderConstant::X_API_KEY_LOWER])) {
+            $newHeaders[HttpRequestHeaderConstant::X_API_KEY] = $headers[HttpRequestHeaderConstant::X_API_KEY_LOWER];
         }
-        $this->dispatcher->dispatch($eventName, $request->getPayload(), $bypassHeaders);
+        $this->dispatcher->dispatch($eventName, $request->getPayload(), $newHeaders);
 
         return $this->response->build(202, [], [
             'success' => true,

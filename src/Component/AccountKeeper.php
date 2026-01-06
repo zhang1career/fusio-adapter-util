@@ -24,16 +24,16 @@ class AccountKeeper
     {
         $this->cache = new PredisClient([
             'scheme' => $_ENV['REDIS_SCHEME'] ?? 'tcp',
-            'host' => $_ENV['REDIS_HOST'], 'localhost',
-            'port' => $_ENV['REDIS_PORT'], 6379,
+            'host' => $_ENV['REDIS_HOST'] ?? 'localhost',
+            'port' => $_ENV['REDIS_PORT'] ?? 6379,
         ], [
-            'prefix' => $_ENV['REDIS_PREFIX_SSO_SERVICE'], '',
+            'prefix' => $_ENV['REDIS_PREFIX_SSO_SERVICE'] ?? '',
         ]);
     }
 
     public function queryAccessToken(string $userName): string
     {
-        $accessToken = $this->cache->get($userName);
+        $accessToken = $this->cache->hget($userName, 'token');
         if ($accessToken == null) {
             return '';
         }

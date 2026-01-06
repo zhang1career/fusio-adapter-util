@@ -30,7 +30,7 @@ use Fusio\Engine\Exception\FactoryResolveException;
 use Fusio\Engine\Form\BuilderInterface;
 use Fusio\Engine\Form\ElementFactoryInterface;
 use Fusio\Engine\ParametersInterface;
-use Fusio\Engine\Request\HttpRequestContext;
+use Fusio\Engine\Request\HttpRequestHeaderConstant;
 use Fusio\Engine\RequestInterface;
 
 /**
@@ -66,14 +66,14 @@ class UtilChain extends ActionAbstract
 
         // Bypass original headers (used for propagation later)
         $originHeaders = RequestHelper::getHeaders($request);
-        if (isset($originHeaders[HttpRequestContext::X_REQUEST_ID_LOWER])) {
-            RequestChainStorage::set(HttpRequestContext::X_REQUEST_ID_LOWER, $originHeaders[HttpRequestContext::X_REQUEST_ID_LOWER]);
+        if (isset($originHeaders[HttpRequestHeaderConstant::X_REQUEST_ID_LOWER])) {
+            RequestChainStorage::set(HttpRequestHeaderConstant::X_REQUEST_ID_LOWER, $originHeaders[HttpRequestHeaderConstant::X_REQUEST_ID_LOWER]);
         }
-        if (isset($originHeaders[HttpRequestContext::X_API_KEY_LOWER])) {
-            RequestChainStorage::set(HttpRequestContext::X_API_KEY_LOWER, $originHeaders[HttpRequestContext::X_API_KEY_LOWER]);
+        if (isset($originHeaders[HttpRequestHeaderConstant::X_API_KEY_LOWER])) {
+            RequestChainStorage::set(HttpRequestHeaderConstant::X_API_KEY_LOWER, $originHeaders[HttpRequestHeaderConstant::X_API_KEY_LOWER]);
         }
-        if (isset($originHeaders[HttpRequestContext::X_EVENT_CODE_LOWER])) {
-            RequestChainStorage::set(HttpRequestContext::X_EVENT_CODE_LOWER, $originHeaders[HttpRequestContext::X_EVENT_CODE_LOWER]);
+        if (isset($originHeaders[HttpRequestHeaderConstant::X_EVENT_CODE_LOWER])) {
+            RequestChainStorage::set(HttpRequestHeaderConstant::X_EVENT_CODE_LOWER, $originHeaders[HttpRequestHeaderConstant::X_EVENT_CODE_LOWER]);
         }
 
         // Execute all but the last action first
@@ -96,16 +96,16 @@ class UtilChain extends ActionAbstract
             // Prepare new headers
             $newHeaders = [];
             // Add X-Request-Id header if available
-            if (RequestChainStorage::has(HttpRequestContext::X_REQUEST_ID_LOWER)) {
-                $newHeaders[HttpRequestContext::X_REQUEST_ID_LOWER] = RequestChainStorage::get(HttpRequestContext::X_REQUEST_ID_LOWER);
+            if (RequestChainStorage::has(HttpRequestHeaderConstant::X_REQUEST_ID_LOWER)) {
+                $newHeaders[HttpRequestHeaderConstant::X_REQUEST_ID] = RequestChainStorage::get(HttpRequestHeaderConstant::X_REQUEST_ID_LOWER);
             }
             // Add Api-Key header if available
-            if (RequestChainStorage::has(HttpRequestContext::X_API_KEY_LOWER)) {
-                $newHeaders[HttpRequestContext::X_API_KEY_LOWER] = RequestChainStorage::get(HttpRequestContext::X_API_KEY_LOWER);
+            if (RequestChainStorage::has(HttpRequestHeaderConstant::X_API_KEY_LOWER)) {
+                $newHeaders[HttpRequestHeaderConstant::X_API_KEY] = RequestChainStorage::get(HttpRequestHeaderConstant::X_API_KEY_LOWER);
             }
             // Add Event-Code header if available
-            if (RequestChainStorage::has(HttpRequestContext::X_EVENT_CODE_LOWER)) {
-                $newHeaders[HttpRequestContext::X_EVENT_CODE_LOWER] = RequestChainStorage::get(HttpRequestContext::X_EVENT_CODE_LOWER);
+            if (RequestChainStorage::has(HttpRequestHeaderConstant::X_EVENT_CODE_LOWER)) {
+                $newHeaders[HttpRequestHeaderConstant::X_EVENT_CODE] = RequestChainStorage::get(HttpRequestHeaderConstant::X_EVENT_CODE_LOWER);
             }
             // Create a new request with updated headers
             $lastRequest = RequestHelper::overrideRequest($request, "", $newHeaders);
